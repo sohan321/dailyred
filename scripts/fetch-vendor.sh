@@ -40,7 +40,11 @@ echo ">> mGBA core ($CORE_REL)"
 curl -fsSL -o "$TMP/mgba.zip" \
   "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@$CORE_REL/retroarch/mgba_libretro.zip"
 check "$TMP/mgba.zip" "$CORE_SHA"
-unzip -oq "$TMP/mgba.zip" -d "$VENDOR"
+if command -v unzip >/dev/null; then
+  unzip -oq "$TMP/mgba.zip" -d "$VENDOR"
+else
+  python3 -m zipfile -e "$TMP/mgba.zip" "$VENDOR"
+fi
 
 echo ">> Pixelify Sans"
 curl -fsSL -o "$TMP/font.woff2" "$FONT_URL"

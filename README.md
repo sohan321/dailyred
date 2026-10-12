@@ -13,6 +13,7 @@ through the mGBA emulator compiled to WebAssembly. Nothing about battles is
 reimplemented in JavaScript.
 
 - [Quick start (macOS)](#quick-start-macos)
+- [Quick start (Linux, or Windows with WSL 2)](#quick-start-linux-or-windows-with-wsl-2)
 - [How it works](#how-it-works)
 - [Team generation](#team-generation)
 - [RED's team](#reds-team)
@@ -37,6 +38,26 @@ node scripts/serve.mjs      # open http://localhost:8080
 ```
 
 `setup-macos.sh` picks the right compiler for Intel or Apple Silicon Macs.
+
+## Quick start (Linux, or Windows with WSL 2)
+
+You need gcc and g++ (`sudo apt install build-essential`), curl and git;
+`make`, zlib and libpng are built into `.toolchain/` if missing. On Windows,
+run this in a WSL 2 distro such as Ubuntu, from a clone inside the Linux
+filesystem (e.g. `~/dailyred`, not `/mnt/c/...`): a Windows checkout gets CRLF
+line endings that bash can't run, and builds on `/mnt/c` are much slower.
+
+```sh
+scripts/setup-linux.sh      # ARM cross-compiler + zlib/libpng (+ make) into .toolchain/
+scripts/get-pokefirered.sh
+scripts/fetch-vendor.sh
+scripts/build-rom.sh
+node scripts/serve.mjs      # open http://localhost:8080
+```
+
+WSL 2 forwards localhost, so the game opens in Windows Chrome. Without Node in
+WSL, copy `web/game/` and `web/vendor/` into a Windows checkout and run
+`node scripts/serve.mjs` there.
 
 ## How it works
 
@@ -98,20 +119,20 @@ file server works without special headers. Everything loads from `web/vendor/`.
 
 ### Game flow and the files involved
 
-| Step | Code |
-|---|---|
-| Copyright screen → straight in (seed set) | `src/intro.c` → `CB2_DailyRed_StartFromCopyright` (`src/dailyred.c`) |
-| Title screen → straight in (no seed) | `src/title_screen.c` → `CB2_DailyRed_StartFromTitle` |
-| New game data: LEAF (FireRed's female player), fast text | `StartNewGame` in `src/dailyred.c`, then vanilla `CB2_NewGame` |
-| Team + warp to the summit instead of the bedroom | `src/new_game.c` → `DailyRed_InitNewGame` |
-| The summit: an open peak with no exits; stairs up to RED, who faces the drop | `data/maps/DailyRed_Summit/`, `data/layouts/DailyRed_Summit/` |
-| Snow on the summit (fixes FireRed's unused snow weather, whose flakes never came back) | `src/field_weather_effects.c` |
+| Step                                                                                                                                            | Code                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Copyright screen → straight in (seed set)                                                                                                       | `src/intro.c` → `CB2_DailyRed_StartFromCopyright` (`src/dailyred.c`)                                    |
+| Title screen → straight in (no seed)                                                                                                            | `src/title_screen.c` → `CB2_DailyRed_StartFromTitle`                                                    |
+| New game data: LEAF (FireRed's female player), fast text                                                                                        | `StartNewGame` in `src/dailyred.c`, then vanilla `CB2_NewGame`                                          |
+| Team + warp to the summit instead of the bedroom                                                                                                | `src/new_game.c` → `DailyRed_InitNewGame`                                                               |
+| The summit: an open peak with no exits; stairs up to RED, who faces the drop                                                                    | `data/maps/DailyRed_Summit/`, `data/layouts/DailyRed_Summit/`                                           |
+| Snow on the summit (fixes FireRed's unused snow weather, whose flakes never came back)                                                          | `src/field_weather_effects.c`                                                                           |
 | Talking to RED → battle → "You defeated RED!" / "Your team was wiped out…" → record → "Play again tomorrow!" / "Try again tomorrow." → fade out | `data/maps/DailyRed_Summit/scripts.inc` and `text.inc`; the `DailyRed_On*` specials in `src/dailyred.c` |
-| Mountain battle background on the summit | `BattleSetup_GetTerrainId` in `src/battle_setup.c` |
-| No free switch when RED's Pokémon faints: Battle Style starts on SET and is locked in Options | `StartNewGame` in `src/dailyred.c`, `src/option_menu.c` |
-| RED as a trainer | `TRAINER_DAILYRED_RED` in `include/constants/opponents.h`, `src/data/trainers.h`, `src/dailyred_boss.c` |
-| Menus: POKéMON / OPTION / EXIT; party: SUMMARY / SWITCH / CANCEL | `src/start_menu.c`, `src/party_menu.c`; window height for short menus in `src/new_menu_helpers.c` |
-| RED's overworld sprite, in its own palette slot so it doesn't clash with LEAF's | `OBJ_EVENT_GFX_DAILYRED_RED` in `include/constants/event_objects.h`, `src/data/object_events/` |
+| Mountain battle background on the summit                                                                                                        | `BattleSetup_GetTerrainId` in `src/battle_setup.c`                                                      |
+| No free switch when RED's Pokémon faints: Battle Style starts on SET and is locked in Options                                                   | `StartNewGame` in `src/dailyred.c`, `src/option_menu.c`                                                 |
+| RED as a trainer                                                                                                                                | `TRAINER_DAILYRED_RED` in `include/constants/opponents.h`, `src/data/trainers.h`, `src/dailyred_boss.c` |
+| Menus: POKéMON / OPTION / EXIT; party: SUMMARY / SWITCH / CANCEL                                                                                | `src/start_menu.c`, `src/party_menu.c`; window height for short menus in `src/new_menu_helpers.c`       |
+| RED's overworld sprite, in its own palette slot so it doesn't clash with LEAF's                                                                 | `OBJ_EVENT_GFX_DAILYRED_RED` in `include/constants/event_objects.h`, `src/data/object_events/`          |
 
 The battle itself is a standard FireRed trainer battle. The map script uses
 `trainerbattle_earlyrival` with `RIVAL_BATTLE_HEAL_AFTER`, the mode FireRed
@@ -159,12 +180,12 @@ not the byte-matching `agbcc` build, so it doesn't reproduce the retail ROM.
   actual in-battle stat total is almost exactly 2 × its base stat total +
   2580, and RED's is 8555. So each minimum gives:
 
-  | Minimum | Typical team vs RED | Weakest possible | Teams stronger than RED |
-  |---|---|---|---|
-  | 2600 | 94% | 91% | about 1 in 45 |
-  | 2650 | 95% | 92% | about 1 in 34 |
-  | **2700** | **96%** | **93%** | **about 1 in 25** |
-  | 2750 | 97% | 94% | about 1 in 17 |
+  | Minimum  | Typical team vs RED | Weakest possible | Teams stronger than RED |
+  | -------- | ------------------- | ---------------- | ----------------------- |
+  | 2600     | 94%                 | 91%              | about 1 in 45           |
+  | 2650     | 95%                 | 92%              | about 1 in 34           |
+  | **2700** | **96%**             | **93%**          | **about 1 in 25**       |
+  | 2750     | 97%                 | 94%              | about 1 in 17           |
 
   (Odds from simulating 80,000 teams.) Measured in the real ROM at 2700 over
   80 runs: typical team 95% of RED's stats, range 93–101%, 1 team stronger
@@ -189,6 +210,7 @@ not the byte-matching `agbcc` build, so it doesn't reproduce the retail ROM.
 
   The player is the original trainer, so everything obeys, and Pokémon are
   marked as event Pokémon so Mew and Deoxys obey too.
+
 - **Held items:** each Pokémon holds one, picked uniformly from a pool of
   generally useful battle items (`sBattleItems`: Leftovers, Choice Band,
   Quick Claw, Lum Berry, pinch berries…) plus the 10% type booster for each
@@ -217,15 +239,15 @@ table next to it. It's Red's Mt. Silver team from HeartGold/SoulSilver
 perfect IVs, held items and full EV spreads. HGSS used several Gen 4 moves, so
 the movesets are adapted to Gen 3 ones.
 
-| Pokémon | HP | Atk | Def | Spe | SpA | SpD | Total |
-|---|---|---|---|---|---|---|---|
-| Pikachu (Light Ball doubles its Sp. Atk) | 35 | 55 | 30 | 90 | 50 | 40 | 300 |
-| Espeon | 65 | 65 | 60 | 110 | 130 | 95 | 525 |
-| Snorlax | 160 | 110 | 65 | 30 | 65 | 110 | 540 |
-| Venusaur | 80 | 82 | 83 | 80 | 100 | 100 | 525 |
-| Charizard | 78 | 84 | 78 | 100 | 109 | 85 | 534 |
-| Blastoise | 79 | 83 | 100 | 78 | 85 | 105 | 530 |
-| **Team** | | | | | | | **2954** |
+| Pokémon                                  | HP  | Atk | Def | Spe | SpA | SpD | Total    |
+| ---------------------------------------- | --- | --- | --- | --- | --- | --- | -------- |
+| Pikachu (Light Ball doubles its Sp. Atk) | 35  | 55  | 30  | 90  | 50  | 40  | 300      |
+| Espeon                                   | 65  | 65  | 60  | 110 | 130 | 95  | 525      |
+| Snorlax                                  | 160 | 110 | 65  | 30  | 65  | 110 | 540      |
+| Venusaur                                 | 80  | 82  | 83  | 80  | 100 | 100 | 525      |
+| Charizard                                | 78  | 84  | 78  | 100 | 109 | 85  | 534      |
+| Blastoise                                | 79  | 83  | 100 | 78  | 85  | 105 | 530      |
+| **Team**                                 |     |     |     |     |     |     | **2954** |
 
 These are Gen 3 base stats from `src/data/pokemon/species_info.h`. With your
 team's IVs (25–31) and focused EVs, both sides get about the same out of their
@@ -276,6 +298,7 @@ npm run teams -- --random 40      # 40 random seeds
 ```
 
 `npm run smoke` checks that:
+
 - each seed's team is valid: 6 different real Gen 1–3 species with a combined
   base stat total of at least 2700 and at most one legendary, level 100, full
   HP, IVs 25–31, EVs exactly as `AssignFocusedEVs` would place them (checked
@@ -365,7 +388,9 @@ footer links to it.
   suspended unless it begins during a click, so the game resumes it on the
   next key press or tap.
 - **Tested environment:** macOS with Google Chrome (headless, desktop and
-  phone emulation). Not yet tried on Safari, Firefox or real phones.
+  phone emulation); the ROM also builds in WSL 2 Ubuntu 22.04 and both test
+  suites pass with Windows Chrome. Not yet tried on Safari, Firefox or real
+  phones.
 - The L/R buttons still open FireRed's built-in help, which describes the
   normal game.
 
@@ -374,6 +399,7 @@ footer links to it.
 ```
 patches/pokefirered-dailyred.patch   all changes to pret/pokefirered
 scripts/setup-macos.sh               toolchain (xPack arm-none-eabi-gcc 14.2.1 + libpng)
+scripts/setup-linux.sh               same for Linux / WSL 2 (+ zlib, and make if missing)
 scripts/get-pokefirered.sh           pinned upstream checkout + patch
 scripts/save-patch.sh                pokefirered/ changes → patches/
 scripts/build-rom.sh                 make modern → web/game/dailyred.gba.gz
@@ -387,3 +413,7 @@ Inside `pokefirered/`, the Daily Red code is `include/dailyred.h`,
 `include/constants/dailyred.h`, `src/dailyred.c` (game flow and seed),
 `src/dailyred_team.c` (team generator), `src/dailyred_boss.c` (RED's team), and
 `data/maps/DailyRed_Summit/` plus `data/layouts/DailyRed_Summit/` (the map).
+
+**cd C:\dailyred**
+
+**node scripts/serve.mjs**

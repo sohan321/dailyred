@@ -133,8 +133,10 @@ export function symbols() {
   const out = execFileSync(existsSync(nm) ? nm : 'arm-none-eabi-nm', [ELF], { encoding: 'utf8', maxBuffer: 64 << 20 });
   symbolCache = new Map();
   for (const line of out.split('\n')) {
-    const [addr, , name] = line.trim().split(/\s+/);
-    if (name) symbolCache.set(name, parseInt(addr, 16));
+    const [addr, type, name] = line.trim().split(/\s+/);
+    // A non-ARM nm (e.g. MinGW's, via its generic ELF target) keeps the Thumb
+    // bit in function addresses; arm-none-eabi-nm already clears it.
+    if (name) symbolCache.set(name, /^[Tt]$/.test(type) ? parseInt(addr, 16) & ~1 : parseInt(addr, 16));
   }
   return symbolCache;
 }
