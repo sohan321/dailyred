@@ -3,3 +3,5 @@
 # apply byte for byte.
 * text=auto eol=lf
 *.patch -text
+# cmd.exe batch files want CRLF.
+*.cmd text eol=crlf

@@ -44,7 +44,17 @@ node scripts/serve.mjs      # open http://localhost:8080
 
 Everything runs natively: no WSL, no MSYS2 install, no admin rights. You need
 [Git for Windows](https://git-scm.com/download/win) (for Git Bash) and
-Node.js 22.15+. Run these in **Git Bash** from the repository folder:
+Node.js 22.15+. Then, from cmd or PowerShell in the repository folder:
+
+```bat
+run                         :: set up, fetch, build and serve; open http://localhost:8080
+run 3000                    :: same on another port
+```
+
+`run.cmd` starts `scripts/run.sh` in Git Bash, which does each step below and
+skips the ones already done; the first run takes a while, later ones only
+rebuild what changed and start the server. Ctrl+C stops it. The steps one by
+one, in **Git Bash**:
 
 ```sh
 scripts/setup-windows.sh    # MinGW (w64devkit), make, ARM cross-compiler, libpng into .toolchain/ (~1 GB, one time)
@@ -418,6 +428,7 @@ patches/pokefirered-dailyred.patch   all changes to pret/pokefirered
 scripts/setup-macos.sh               toolchain (xPack arm-none-eabi-gcc 14.2.1 + libpng)
 scripts/setup-linux.sh               same for Linux (+ zlib, and make if missing)
 scripts/setup-windows.sh             same for Windows in Git Bash (+ w64devkit MinGW, MSYS2 make)
+scripts/run.sh                       all of the setup steps, then serve (run.cmd starts it from cmd)
 scripts/get-pokefirered.sh           pinned upstream checkout + patch
 scripts/save-patch.sh                pokefirered/ changes → patches/
 scripts/build-rom.sh                 make modern → web/game/dailyred.gba.gz
