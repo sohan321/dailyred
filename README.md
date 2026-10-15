@@ -13,7 +13,8 @@ through the mGBA emulator compiled to WebAssembly. Nothing about battles is
 reimplemented in JavaScript.
 
 - [Quick start (macOS)](#quick-start-macos)
-- [Quick start (Linux, or Windows with WSL 2)](#quick-start-linux-or-windows-with-wsl-2)
+- [Quick start (Windows)](#quick-start-windows)
+- [Quick start (Linux)](#quick-start-linux)
 - [How it works](#how-it-works)
 - [Team generation](#team-generation)
 - [RED's team](#reds-team)
@@ -39,13 +40,33 @@ node scripts/serve.mjs      # open http://localhost:8080
 
 `setup-macos.sh` picks the right compiler for Intel or Apple Silicon Macs.
 
-## Quick start (Linux, or Windows with WSL 2)
+## Quick start (Windows)
+
+Everything runs natively: no WSL, no MSYS2 install, no admin rights. You need
+[Git for Windows](https://git-scm.com/download/win) (for Git Bash) and
+Node.js 22.15+. Run these in **Git Bash** from the repository folder:
+
+```sh
+scripts/setup-windows.sh    # MinGW (w64devkit), make, ARM cross-compiler, libpng into .toolchain/ (~1 GB, one time)
+scripts/get-pokefirered.sh
+scripts/fetch-vendor.sh
+scripts/build-rom.sh        # ~3 minutes from scratch
+node scripts/serve.mjs      # open http://localhost:8080
+```
+
+`setup-windows.sh` downloads w64devkit (a portable MinGW-w64 GCC for the
+decomp's host tools), GNU make from MSYS2 (it runs on Git Bash's own runtime),
+the same xPack ARM compiler as macOS and Linux, and builds zlib and libpng.
+Everything goes into `.toolchain/`. The repository's `.gitattributes` keeps
+LF line endings so the scripts run in Git Bash.
+
+After the build, `node scripts/serve.mjs` also works from PowerShell or
+`cmd`; only the build scripts need Git Bash.
+
+## Quick start (Linux)
 
 You need gcc and g++ (`sudo apt install build-essential`), curl and git;
-`make`, zlib and libpng are built into `.toolchain/` if missing. On Windows,
-run this in a WSL 2 distro such as Ubuntu, from a clone inside the Linux
-filesystem (e.g. `~/dailyred`, not `/mnt/c/...`): a Windows checkout gets CRLF
-line endings that bash can't run, and builds on `/mnt/c` are much slower.
+`make`, zlib and libpng are built into `.toolchain/` if missing.
 
 ```sh
 scripts/setup-linux.sh      # ARM cross-compiler + zlib/libpng (+ make) into .toolchain/
@@ -54,10 +75,6 @@ scripts/fetch-vendor.sh
 scripts/build-rom.sh
 node scripts/serve.mjs      # open http://localhost:8080
 ```
-
-WSL 2 forwards localhost, so the game opens in Windows Chrome. Without Node in
-WSL, copy `web/game/` and `web/vendor/` into a Windows checkout and run
-`node scripts/serve.mjs` there.
 
 ## How it works
 
@@ -388,8 +405,8 @@ footer links to it.
   suspended unless it begins during a click, so the game resumes it on the
   next key press or tap.
 - **Tested environment:** macOS with Google Chrome (headless, desktop and
-  phone emulation); the ROM also builds in WSL 2 Ubuntu 22.04 and both test
-  suites pass with Windows Chrome. Not yet tried on Safari, Firefox or real
+  phone emulation); the ROM also builds on Linux (Ubuntu 22.04) and natively
+  on Windows 11, where both test suites pass with Windows Chrome. Not yet tried on Safari, Firefox or real
   phones.
 - The L/R buttons still open FireRed's built-in help, which describes the
   normal game.
@@ -399,7 +416,8 @@ footer links to it.
 ```
 patches/pokefirered-dailyred.patch   all changes to pret/pokefirered
 scripts/setup-macos.sh               toolchain (xPack arm-none-eabi-gcc 14.2.1 + libpng)
-scripts/setup-linux.sh               same for Linux / WSL 2 (+ zlib, and make if missing)
+scripts/setup-linux.sh               same for Linux (+ zlib, and make if missing)
+scripts/setup-windows.sh             same for Windows in Git Bash (+ w64devkit MinGW, MSYS2 make)
 scripts/get-pokefirered.sh           pinned upstream checkout + patch
 scripts/save-patch.sh                pokefirered/ changes → patches/
 scripts/build-rom.sh                 make modern → web/game/dailyred.gba.gz

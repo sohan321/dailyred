@@ -1,0 +1,5 @@
+# LF everywhere, even in a Windows checkout (Git for Windows defaults to
+# CRLF): Git Bash can't run scripts with CRLF line endings, and the patch must
+# apply byte for byte.
+* text=auto eol=lf
+*.patch -text

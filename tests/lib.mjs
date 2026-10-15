@@ -16,6 +16,9 @@ const CHROME_PATHS = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/usr/bin/google-chrome',
   '/usr/bin/chromium',
+  ...['PROGRAMFILES', 'PROGRAMFILES(X86)', 'LOCALAPPDATA']
+    .filter((v) => process.env[v])
+    .map((v) => join(process.env[v], 'Google/Chrome/Application/chrome.exe')),
 ].filter(Boolean);
 
 export function findChrome() {
@@ -129,7 +132,7 @@ export async function readMemory(page) {
 let symbolCache;
 export function symbols() {
   if (symbolCache) return symbolCache;
-  const nm = join(ROOT, '.toolchain/arm-none-eabi/bin/arm-none-eabi-nm');
+  const nm = join(ROOT, '.toolchain/arm-none-eabi/bin/arm-none-eabi-nm' + (process.platform === 'win32' ? '.exe' : ''));
   const out = execFileSync(existsSync(nm) ? nm : 'arm-none-eabi-nm', [ELF], { encoding: 'utf8', maxBuffer: 64 << 20 });
   symbolCache = new Map();
   for (const line of out.split('\n')) {

@@ -16,6 +16,9 @@ fi
 
 git init -q "$GAME"
 git -C "$GAME" remote add origin "$PRET_URL"
+# Keep LF line endings even where Git for Windows defaults to CRLF: the patch,
+# the asm sources and the build scripts all expect LF.
+git -C "$GAME" config core.autocrlf false
 echo ">> Fetching pret/pokefirered @ ${PRET_COMMIT:0:10}"
 git -C "$GAME" fetch -q --depth 1 origin "$PRET_COMMIT"
 git -C "$GAME" checkout -q FETCH_HEAD

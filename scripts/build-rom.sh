@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the modified FireRed ROM with the project-local toolchain
-# (see scripts/setup-macos.sh or setup-linux.sh) and puts a gzipped copy in web/game/ for the website.
+# (see scripts/setup-macos.sh, setup-linux.sh or setup-windows.sh) and puts a gzipped copy in web/game/ for the website.
 #
 #   scripts/build-rom.sh            # normal build
 #   scripts/build-rom.sh clean      # any extra args are passed to make
@@ -11,7 +11,7 @@ TC="$ROOT/.toolchain"
 GAME="$ROOT/pokefirered"
 
 if [ ! -x "$TC/arm-none-eabi/bin/arm-none-eabi-gcc" ]; then
-  echo "Toolchain missing. Run scripts/setup-macos.sh (or setup-linux.sh) first."; exit 1
+  echo "Toolchain missing. Run scripts/setup-macos.sh (or setup-linux.sh / setup-windows.sh) first."; exit 1
 fi
 
 # gbagfx asks pkg-config for libpng; clang also honours these variables,
@@ -22,6 +22,17 @@ export LIBRARY_PATH="$TC/libpng/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
 export PATH="$ROOT/scripts/shims:$PATH"
 # setup-linux.sh puts GNU make here when the system has none.
 [ -d "$TC/bin" ] && export PATH="$TC/bin:$PATH"
+
+# Windows (Git Bash, see setup-windows.sh): w64devkit provides gcc and g++.
+# It goes last so recipes keep using Git Bash's bash, sed, find etc. Its GCC is
+# a native Windows program, so it gets Windows-style library paths.
+if [ -d "$TC/w64devkit/bin" ]; then
+  export PATH="$PATH:$TC/w64devkit/bin"
+  export CPATH="$(cygpath -w "$TC/libpng/include")"
+  export LIBRARY_PATH="$(cygpath -w "$TC/libpng/lib")"
+  # w64devkit's GCC is built without LTO, which gbagfx's Makefile asks for.
+  make -C "$GAME/tools/gbagfx" CFLAGS="-Wall -Wextra -Werror -Wno-sign-compare -std=c11 -O3 -DPNG_SKIP_SETJMP_CHECK"
+fi
 
 JOBS="$(sysctl -n hw.ncpu 2>/dev/null || nproc)"
 
