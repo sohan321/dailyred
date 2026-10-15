@@ -23,7 +23,12 @@ FONT_LICENSE_URL="https://raw.githubusercontent.com/google/fonts/main/ofl/pixeli
 
 check() { # file sha
   local actual
-  actual="$(shasum -a 256 "$1" | awk '{print $1}')"
+  # sha256sum on Linux and Git Bash (where shasum may not be on PATH), shasum on macOS.
+  if command -v sha256sum >/dev/null; then
+    actual="$(sha256sum "$1" | awk '{print $1}')"
+  else
+    actual="$(shasum -a 256 "$1" | awk '{print $1}')"
+  fi
   [ "$actual" = "$2" ] || { echo "Checksum mismatch: $1 ($actual)"; exit 1; }
 }
 

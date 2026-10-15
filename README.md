@@ -44,11 +44,12 @@ node scripts/serve.mjs      # open http://localhost:8080
 
 Everything runs natively: no WSL, no MSYS2 install, no admin rights. You need
 [Git for Windows](https://git-scm.com/download/win) (for Git Bash) and
-Node.js 22.15+. Then, from cmd or PowerShell in the repository folder:
+Node.js 22.15+. Then, from cmd or PowerShell in the repository folder (note
+the `.\`, which PowerShell needs):
 
 ```bat
-run                         :: set up, fetch, build and serve; open http://localhost:8080
-run 3000                    :: same on another port
+.\run                       :: set up, fetch, build and serve; open http://localhost:8080
+.\run 3000                  :: same on another port
 ```
 
 `run.cmd` starts `scripts/run.sh` in Git Bash, which does each step below and
